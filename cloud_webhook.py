@@ -1,45 +1,42 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request
 import json
-import os
-from datetime import datetime
 import requests
 
 app = Flask(__name__)
 
-DATA_FILE = "events.json"
+# 🔑 PUT YOUR TOKEN HERE
+TELEGRAM_BOT_TOKEN = "8331553657:AAEjB35Mkg6SU0PwglnHIx0sIk3l0xLgfNs"
 
-# 🔧 TEMP: leave this as-is for now (we'll fill ngrok after)
-LOCAL_FORWARD_URL = "http://localhost:5000/local-endpoint"
+# 🔑 YOUR CHAT ID (we already got this)
+TELEGRAM_CHAT_ID = "8343076256"
 
 
 @app.route("/", methods=["GET"])
 def home():
-    return "Webhook server is running", 200
+    return "OK", 200
 
 
 @app.route("/stripe-webhook", methods=["POST"])
-@app.route("/stripe-webhook/", methods=["POST"])
-@app.route("/webhook", methods=["POST"])
 def stripe_webhook():
     try:
         print("🔥 Webhook hit")
 
-        payload = request.data
-        event = json.loads(payload)
+        event = json.loads(request.data)
+        event_type = event.get("type", "unknown")
 
-        event["received_at"] = datetime.utcnow().isoformat()
+        print("Event:", event_type)
 
-        with open(DATA_FILE, "a") as f:
-            f.write(json.dumps(event) + "\n")
+        # 📲 SEND TELEGRAM MESSAGE
+        message = f"💰 Payment event:\n{event_type}"
 
-        print("✅ Event received:", event.get("type"))
+        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
 
-        # Forward to local (will fail safely for now)
-        try:
-            requests.post(LOCAL_FORWARD_URL, json=event, timeout=5)
-            print("➡️ Forward attempted")
-        except Exception as e:
-            print("⚠️ Forward failed:", e)
+        requests.post(url, json={
+            "chat_id": TELEGRAM_CHAT_ID,
+            "text": message
+        })
+
+        print("📲 Sent to Telegram")
 
         return "", 200
 
@@ -48,28 +45,5 @@ def stripe_webhook():
         return "", 500
 
 
-@app.route("/events", methods=["GET"])
-def get_events():
-    try:
-        if not os.path.exists(DATA_FILE):
-            return jsonify({"events": []})
-
-        with open(DATA_FILE, "r") as f:
-            lines = f.readlines()
-
-        events = []
-        for line in lines:
-            try:
-                events.append(json.loads(line))
-            except:
-                continue
-
-        return jsonify({"events": events})
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5001))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=5000)
