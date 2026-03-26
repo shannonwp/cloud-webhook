@@ -2,18 +2,21 @@ from flask import Flask, request, jsonify
 import json
 import os
 from datetime import datetime
+import requests
 
 app = Flask(__name__)
 
 DATA_FILE = "events.json"
 
-# Home route
+# 🔧 TEMP: leave this as-is for now (we'll fill ngrok after)
+LOCAL_FORWARD_URL = "http://localhost:5000/local-endpoint"
+
+
 @app.route("/", methods=["GET"])
 def home():
     return "Webhook server is running", 200
 
 
-# Stripe webhook (handles all variants)
 @app.route("/stripe-webhook", methods=["POST"])
 @app.route("/stripe-webhook/", methods=["POST"])
 @app.route("/webhook", methods=["POST"])
@@ -31,6 +34,13 @@ def stripe_webhook():
 
         print("✅ Event received:", event.get("type"))
 
+        # Forward to local (will fail safely for now)
+        try:
+            requests.post(LOCAL_FORWARD_URL, json=event, timeout=5)
+            print("➡️ Forward attempted")
+        except Exception as e:
+            print("⚠️ Forward failed:", e)
+
         return "", 200
 
     except Exception as e:
@@ -38,7 +48,6 @@ def stripe_webhook():
         return "", 500
 
 
-# Debug route
 @app.route("/events", methods=["GET"])
 def get_events():
     try:
@@ -58,11 +67,9 @@ def get_events():
         return jsonify({"events": events})
 
     except Exception as e:
-        print("❌ Error reading events:", e)
         return jsonify({"error": str(e)}), 500
 
 
-# Local run
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5001))
     app.run(host="0.0.0.0", port=port)
