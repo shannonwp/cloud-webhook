@@ -1,9 +1,10 @@
 @app.route("/stripe-webhook", methods=["POST"])
+@app.route("/stripe-webhook/", methods=["POST"])
+@app.route("/webhook", methods=["POST"])  # fallback
 def stripe_webhook():
     try:
         print("🔥 Webhook hit")
 
-        # Use raw data (Stripe-safe)
         payload = request.data
         print("Payload received")
 
