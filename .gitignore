@@ -1,0 +1,6 @@
+.ssh/
+venv/
+.vscode-server/
+__pycache__/
+*.pyc
+.env
