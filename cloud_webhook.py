@@ -4,10 +4,7 @@ import requests
 
 app = Flask(__name__)
 
-# 🔑 PUT YOUR TOKEN HERE
 TELEGRAM_BOT_TOKEN = "8331553657:AAEjB35Mkg6SU0PwglnHIx0sIk3l0xLgfNs"
-
-# 🔑 YOUR CHAT ID (we already got this)
 TELEGRAM_CHAT_ID = "8343076256"
 
 
@@ -26,17 +23,16 @@ def stripe_webhook():
 
         print("Event:", event_type)
 
-        # 📲 SEND TELEGRAM MESSAGE
         message = f"💰 Payment event:\n{event_type}"
 
         url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
 
-        requests.post(url, json={
+        response = requests.post(url, json={
             "chat_id": TELEGRAM_CHAT_ID,
             "text": message
         })
 
-        print("📲 Sent to Telegram")
+        print("📲 Telegram response:", response.text)
 
         return "", 200
 
